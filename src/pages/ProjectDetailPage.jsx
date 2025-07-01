@@ -15,6 +15,13 @@ import { Badge } from "../ui/Badge";
 import ProgressBar from "../ui/Progressbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/Tabs";
 import { ArrowLeft, Calendar, Users, Edit, Trash2, Plus } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/Select";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 export default function ProjectDetailPage() {
@@ -134,8 +141,8 @@ export default function ProjectDetailPage() {
   const progressPercentage =
     totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  const displayOwner = project.owner || "Test User";
-  const displayCreatedAt = project.created_at || "2025-06-25";
+  const displayOwner = project.owner;
+  const displayCreatedAt = project.created_at;
   return (
     // <ProtectedRoute>
     <div className="min-h-screen bg-gray-50">
@@ -166,7 +173,7 @@ export default function ProjectDetailPage() {
               <div className="flex items-center gap-6 text-sm text-gray-600">
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 mr-1" />
-                  Due {project.dueDate}
+                  Due {project.due_date}
                 </div>
                 <div className="flex items-center">
                   <Users className="h-4 w-4 mr-1" />
@@ -197,7 +204,9 @@ export default function ProjectDetailPage() {
               <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="tasks">
-                  <Link to="/projects/:id/tasks">Tasks</Link>
+                  <Link to={`/projects/${project.id}/tasks`} className="flex-1">
+                    Tasks
+                  </Link>
                 </TabsTrigger>
                 <TabsTrigger value="activity">Activity</TabsTrigger>
               </TabsList>
@@ -259,10 +268,17 @@ export default function ProjectDetailPage() {
                         Manage and track all project tasks
                       </CardDescription>
                     </div>
-                    <Button size="sm">
+                    {/* <Button size="sm">
                       <Plus className="h-4 w-4 mr-2" />
                       Add Task
-                    </Button>
+                    </Button> */}
+                    <div className="mt-4">
+                      <Link to={`/projects/${project.id}/tasks`}>
+                        <Button variant="outline" className="w-full">
+                          View All Tasks
+                        </Button>
+                      </Link>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -287,13 +303,6 @@ export default function ProjectDetailPage() {
                           </div>
                         </div>
                       ))}
-                    </div>
-                    <div className="mt-4">
-                      <Link to={`/projects/${project.id}/tasks`}>
-                        <Button variant="outline" className="w-full">
-                          View All Tasks
-                        </Button>
-                      </Link>
                     </div>
                   </CardContent>
                 </Card>
@@ -380,6 +389,58 @@ export default function ProjectDetailPage() {
                       {project.status.replace("_", " ")}
                     </Badge>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Project Actions - Change Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Project Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div>
+                  <label className="text-sm font-medium text-gray-600 mb-2 block">
+                    Change Project Status
+                  </label>
+                  <Select
+                    value={project.status}
+                    onValueChange={async (newStatus) => {
+                      try {
+                        await api.put(
+                          `/projects/${id}`,
+                          { ...project, status: newStatus },
+                          {
+                            headers: {
+                              Authorization: `Bearer ${localStorage.getItem(
+                                "taskhub_token"
+                              )}`,
+                            },
+                          }
+                        );
+                        setProject((prev) => ({ ...prev, status: newStatus }));
+                      } catch (error) {
+                        console.error(
+                          "Failed to update project status:",
+                          error
+                        );
+                        alert("Failed to update status");
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder="Select status"
+                        value={project.status}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="on_hold">On Hold</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>

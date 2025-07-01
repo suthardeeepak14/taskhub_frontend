@@ -1,33 +1,33 @@
-import { useState, Children, cloneElement } from "react"
-import { ChevronDown } from "lucide-react"
-import clsx from "clsx"
+import { useState, Children, cloneElement } from "react";
+import { ChevronDown } from "lucide-react";
+import clsx from "clsx";
 
 export function Select({ value, onValueChange, children }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
   const handleSelect = (val) => {
-    onValueChange(val)
-    setOpen(false)
-  }
+    onValueChange(val);
+    setOpen(false);
+  };
 
   const childrenWithProps = Children.map(children, (child) => {
     if (child.type === SelectTrigger) {
       return cloneElement(child, {
         onClick: () => setOpen((prev) => !prev),
-      })
+      });
     }
 
     if (child.type === SelectContent) {
       return cloneElement(child, {
         open,
         onSelect: handleSelect,
-      })
+      });
     }
 
-    return child
-  })
+    return child;
+  });
 
-  return <div className="relative">{childrenWithProps}</div>
+  return <div className="relative">{childrenWithProps}</div>;
 }
 
 export function SelectTrigger({ children, onClick }) {
@@ -40,31 +40,33 @@ export function SelectTrigger({ children, onClick }) {
       {children}
       <ChevronDown className="w-4 h-4 ml-2" />
     </button>
-  )
+  );
 }
 
 export function SelectValue({ value, placeholder }) {
   return (
-    <span className={clsx("text-sm", value ? "text-gray-900" : "text-gray-400")}>
+    <span
+      className={clsx("text-sm", value ? "text-gray-900" : "text-gray-700")}
+    >
       {value || placeholder}
     </span>
-  )
+  );
 }
 
 export function SelectContent({ children, open, onSelect }) {
-  if (!open) return null
+  if (!open) return null;
 
   const items = Children.map(children, (child) => {
     return cloneElement(child, {
       onSelect, // ✅ Fix: pass the onSelect handler to each SelectItem
-    })
-  })
+    });
+  });
 
   return (
     <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200">
       <ul className="max-h-60 overflow-auto text-sm">{items}</ul>
     </div>
-  )
+  );
 }
 
 export function SelectItem({ value, children, onSelect }) {
@@ -75,5 +77,5 @@ export function SelectItem({ value, children, onSelect }) {
     >
       {children}
     </li>
-  )
+  );
 }

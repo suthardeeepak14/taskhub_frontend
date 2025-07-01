@@ -141,13 +141,11 @@ export default function TaskDetailPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "todo":
-        return "bg-gray-100 text-gray-800";
       case "in_progress":
         return "bg-blue-100 text-blue-800";
       case "completed":
         return "bg-green-100 text-green-800";
-      case "blocked":
+      case "pending":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -249,11 +247,11 @@ export default function TaskDetailPage() {
               <div className="flex items-center gap-6 text-sm text-gray-600">
                 <div className="flex items-center">
                   <User className="h-4 w-4 mr-1" />
-                  Assigned to {task.assignee}
+                  Assigned by {task.assignee}
                 </div>
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 mr-1" />
-                  Due {task.dueDate}
+                  Due {task.due_date}
                 </div>
                 <div className="flex items-center">
                   <MessageSquare className="h-4 w-4 mr-1" />
@@ -369,13 +367,16 @@ export default function TaskDetailPage() {
                     onValueChange={handleStatusChange}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue
+                        placeholder={task.status
+                          .replace("_", " ")
+                          .toUpperCase()}
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="todo">To Do</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="in_progress">In Progress</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="blocked">Blocked</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

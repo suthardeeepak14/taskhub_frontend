@@ -1,48 +1,55 @@
-import { useState } from "react"
-import { useAuth } from "../contexts/AuthContext"
-import { Label } from "../ui/Label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/Card"
-import { Alert, AlertDescription } from "../ui/Alert"
-import { FolderKanban } from "lucide-react"
-import { Link } from "react-router-dom"
-import { Button } from "../ui/Button"
-import { Input } from "../ui/Input"
+import { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { Label } from "../ui/Label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/Card";
+import { Alert, AlertDescription } from "../ui/Alert";
+import { FolderKanban } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
 
 export default function RegisterPage() {
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const { register } = useAuth()
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { register } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-  
+
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       setLoading(false);
       return;
     }
-  
+
     console.log("Registering...");
-  
+
     const result = await register(email, password, name);
-  
+
     console.log("Register result:", result);
-  
+
     if (!result.success) {
       setError(result.error || "Unknown error");
       setLoading(false);
       return;
     }
-  
+
     setLoading(false);
+    navigate("/login");
   };
-  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -52,7 +59,9 @@ export default function RegisterPage() {
             <FolderKanban className="h-12 w-12 text-primary" />
           </div>
           <CardTitle className="text-2xl">Create your account</CardTitle>
-          <CardDescription>Sign up to start managing your projects</CardDescription>
+          <CardDescription>
+            Sign up to start managing your projects
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -126,5 +135,5 @@ export default function RegisterPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

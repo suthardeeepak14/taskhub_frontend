@@ -123,24 +123,21 @@ export default function EditTaskPage() {
               <SelectTrigger>
                 <SelectValue
                   value={
-                    formData.status === "todo"
-                      ? "To Do"
+                    formData.status === "pending"
+                      ? "Pending"
                       : formData.status === "in_progress"
                       ? "In Progress"
                       : formData.status === "completed"
                       ? "Completed"
                       : formData.status === "blocked"
-                      ? "Blocked"
-                      : ""
                   }
                   placeholder="Select status"
                 />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todo">To Do</SelectItem>
+                <SelectItem value="todo">Pending</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="blocked">Blocked</SelectItem>
               </SelectContent>
             </Select>
           </div>

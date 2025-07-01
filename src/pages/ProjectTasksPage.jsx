@@ -40,11 +40,9 @@ export default function ProjectTasksPage() {
         const projectRes = await api.get(`/projects/${id}`);
         setProject(projectRes.data);
 
-        const tasksRes = await api.get(`/projects/${id}/tasks`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("taskhub_token")}`,
-          },
-        });
+        const tasksRes = await api.get(
+          `/projects/${id}/tasks-with-comment-count`
+        );
         setTasks(tasksRes.data);
       } catch (error) {
         console.error("Error fetching project/tasks", error);
@@ -116,8 +114,8 @@ export default function ProjectTasksPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-
       <div className="container mx-auto px-4 py-8">
+        {/* Back link */}
         <div className="mb-8">
           <Link
             to={`/projects/${id}`}
@@ -127,6 +125,7 @@ export default function ProjectTasksPage() {
             Back to {project?.name}
           </Link>
 
+          {/* Header */}
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -160,17 +159,10 @@ export default function ProjectTasksPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="todo">To Do</SelectItem>
+
               <SelectItem value="in_progress">In Progress</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem
-                value="v
-              g[[\ltyytg,,rr ;e\]d
-              f2]\\
-              blocked"
-              >
-                Blocked
-              </SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
             </SelectContent>
           </Select>
           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
@@ -215,7 +207,6 @@ export default function ProjectTasksPage() {
                           </Badge>
                         </div>
                         <p className="text-gray-600 mb-4">{task.description}</p>
-
                         <div className="flex items-center gap-6 text-sm text-gray-500">
                           <div className="flex items-center">
                             <User className="h-4 w-4 mr-1" />
@@ -249,43 +240,61 @@ export default function ProjectTasksPage() {
           {/* Kanban View */}
           <TabsContent value="kanban">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Object.entries(groupedTasks).map(([status, statusTasks]) => (
-                <Card key={status}>
-                  <CardHeader>
-                    <CardTitle className="text-sm font-medium flex items-center justify-between">
-                      <span>{status.replace("_", " ").toUpperCase()}</span>
-                      <Badge variant="secondary">{statusTasks.length}</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {statusTasks.map((task) => (
-                      <Card
-                        key={task.id}
-                        className="p-3 hover:shadow-sm transition-shadow cursor-pointer"
-                      >
-                        <div className="space-y-2">
-                          <h4 className="font-medium text-sm">{task.title}</h4>
-                          <div className="flex items-center justify-between">
-                            <Badge
-                              className={getPriorityColor(task.priority)}
-                              variant="outline"
-                            >
-                              {task.priority}
-                            </Badge>
-                            <div className="flex items-center text-xs text-gray-500">
-                              <MessageSquare className="h-3 w-3 mr-1" />
-                              {task.comment_count || 0}
+              {Object.entries(groupedTasks)
+                .filter(([status, tasks]) => tasks.length > 0)
+                .map(([status, tasks]) => (
+                  <Card
+                    key={status}
+                    className="bg-gray-100 rounded-lg shadow-sm"
+                  >
+                    <CardHeader>
+                      <CardTitle className="text-sm font-medium flex items-center justify-between">
+                        <span>{status.replace("_", " ").toUpperCase()}</span>
+                        <Badge variant="secondary">{tasks.length}</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {tasks.map((task) => (
+                        <Card
+                          key={task.id}
+                          className="p-3 hover:shadow transition cursor-pointer"
+                        >
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-base">
+                              {task.title}
+                            </h4>
+                            <div className="flex items-center justify-between text-xs">
+                              <Badge
+                                className={getPriorityColor(task.priority)}
+                                variant="outline"
+                              >
+                                {task.priority}
+                              </Badge>
+                              <div className="flex items-center text-gray-500">
+                                <MessageSquare className="h-3 w-3 mr-1" />
+                                {task.comment_count || 0}
+                              </div>
                             </div>
+                            <p className="text-xs text-gray-500">
+                              {task.assignee || "Unassigned"}
+                            </p>
+                            <Badge className={getStatusColor(task.status)}>
+                              {task.status.replace("_", " ")}
+                            </Badge>
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {task.assignee || "Unassigned"}
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
+                        </Card>
+                      ))}
+                    </CardContent>
+                  </Card>
+                ))}
+
+              {Object.values(groupedTasks).every(
+                (tasks) => tasks.length === 0
+              ) && (
+                <p className="text-gray-500 col-span-full text-center py-8">
+                  No tasks found in this project.
+                </p>
+              )}
             </div>
           </TabsContent>
         </Tabs>

@@ -20,22 +20,22 @@ import {
 import { Plus, Search, Calendar, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
+
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const token = localStorage.getItem("token");
-
+        const token = localStorage.getItem("taskhub_token");
         const res = await api.get("/projects", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-
         setProjects(res.data);
       } catch (err) {
         console.error("Error fetching projects:", err);
@@ -62,20 +62,25 @@ export default function ProjectsPage() {
     }
   };
 
+  const getProgressPercentage = (completed, total) => {
+    return total > 0 ? Math.round((completed / total) * 100) : 0;
+  };
+
   const filteredProjects = projects.filter((project) => {
     const matchesSearch =
       project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (project.description || "")
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
+
     const matchesStatus =
       statusFilter === "all" || project.status === statusFilter;
+
     return matchesSearch && matchesStatus;
   });
-  const getProgressPercentage = (completed, total) => {
-    return total > 0 ? Math.round((completed / total) * 100) : 0;
-  };
+
   if (loading) return <p>Loading...</p>;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -111,7 +116,7 @@ export default function ProjectsPage() {
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="planning">Planning</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="on_hold">On Hold</SelectItem>
             </SelectContent>
@@ -119,9 +124,7 @@ export default function ProjectsPage() {
         </div>
 
         {/* Projects List */}
-        {loading ? (
-          <p>Loading projects...</p>
-        ) : filteredProjects.length === 0 ? (
+        {filteredProjects.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">
               No projects found matching your criteria.
@@ -135,72 +138,86 @@ export default function ProjectsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProjects.reverse().map((project) => (
-              <Card
-                key={project.id}
-                className="hover:shadow-lg transition-shadow"
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg mb-2">
-                        {project.name}
-                      </CardTitle>
-                      <CardDescription className="text-sm">
-                        {project.description}
-                      </CardDescription>
-                    </div>
-                    <Badge className={getStatusColor(project.status)}>
-                      {project.status.replace("_", " ")}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Progress</span>
-                        <span>{getProgressPercentage(0, 0)}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-primary h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${getProgressPercentage(0, 0)}%` }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        0 of 0 tasks completed
-                      </div>
-                    </div>
+            {filteredProjects.reverse().map((project) => {
+              const totalTasks = project.tasks.length;
+              const completedTasks = project.tasks.filter(
+                (task) => task.status === "completed"
+              ).length;
+              const progress = getProgressPercentage(
+                completedTasks,
+                totalTasks
+              );
 
-                    <div className="flex justify-between text-sm text-gray-600">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        Due {project.due_date || "N/A"}
+              return (
+                <Card
+                  key={project.id}
+                  className="hover:shadow-lg transition-shadow"
+                >
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg mb-2">
+                          {project.name}
+                        </CardTitle>
+                        <CardDescription className="text-sm">
+                          {project.description}
+                        </CardDescription>
                       </div>
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 mr-1" />
-                        N/A members
-                      </div>
+                      <Badge className={getStatusColor(project.status)}>
+                        {project.status.replace("_", " ")}
+                      </Badge>
                     </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Progress Bar */}
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Progress</span>
+                          <span>{progress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${progress}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {completedTasks} of {totalTasks} tasks completed
+                        </div>
+                      </div>
 
-                    <div className="flex gap-2 pt-2">
-                      <Link to={`/projects/${project.id}`} className="flex-1">
-                        <Button variant="outline" className="w-full">
-                          View Details
-                        </Button>
-                      </Link>
-                      <Link
-                        to={`/projects/${project.id}/tasks`}
-                        className="flex-1"
-                      >
-                        <Button className="w-full">View Tasks</Button>
-                      </Link>
+                      {/* Footer Info */}
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          Due {project.due_date || "N/A"}
+                        </div>
+                        <div className="flex items-center">
+                          <Users className="h-4 w-4 mr-1" />
+                          {project.members?.length || 0} members
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 pt-2">
+                        <Link to={`/projects/${project.id}`} className="flex-1">
+                          <Button variant="outline" className="w-full">
+                            View Details
+                          </Button>
+                        </Link>
+                        <Link
+                          to={`/projects/${project.id}/tasks`}
+                          className="flex-1"
+                        >
+                          <Button className="w-full">View Tasks</Button>
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

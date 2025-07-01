@@ -31,6 +31,7 @@ export default function NewTaskPage() {
     priority: "medium",
     due_date: "",
     status: "pending",
+    assignee: "",
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -53,6 +54,7 @@ export default function NewTaskPage() {
       due_date: formData.due_date || null,
       status: formData.status,
       project_id: projectId ? projectId : null,
+      assignee: formData.assignee || null,
     };
 
     console.log("Submitting payload:", payload);
@@ -211,7 +213,17 @@ export default function NewTaskPage() {
                     </Select>
                   </div>
                 </div>
-
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assignee
+                  </label>
+                  <Input
+                    type="text"
+                    value={formData.assignee}
+                    onChange={(e) => handleChange("assignee", e.target.value)}
+                    placeholder="Enter assignee name"
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label>Due Date</Label>
                   <Input
