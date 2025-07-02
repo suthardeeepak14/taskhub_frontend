@@ -48,7 +48,7 @@ export function SelectValue({ value, placeholder }) {
     <span
       className={clsx("text-sm", value ? "text-gray-900" : "text-gray-700")}
     >
-      {value || placeholder}
+      {value && Array.isArray(value) ? value.join(", ") : value || placeholder}
     </span>
   );
 }

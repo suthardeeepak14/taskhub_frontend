@@ -44,11 +44,7 @@ export default function NewProjectPage() {
     setError("");
 
     try {
-      await api.post("/projects", formData, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      await api.post("/projects", formData);
 
       navigate("/projects");
     } catch (error) {
@@ -162,7 +158,7 @@ export default function NewProjectPage() {
                 </div>
 
                 <div className="flex gap-4 pt-4">
-                  {user?.role === "admin" && (
+                  {["admin", "user"].includes(user?.role) && (
                     <Button type="submit" disabled={loading}>
                       {loading ? "Creating..." : "Create Project"}
                     </Button>

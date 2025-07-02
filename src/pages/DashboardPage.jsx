@@ -31,15 +31,9 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("token");
-
         const [projectsRes, tasksRes] = await Promise.all([
-          api.get("/projects", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          api.get("/tasks", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          api.get("/projects"),
+          api.get("/tasks"),
         ]);
 
         setProjects(projectsRes.data);
@@ -158,13 +152,12 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center justify-between gap-4">
               <Link to="/projects/new">
-                {user?.role === "admin" && (
+                {["admin", "user"].includes(user?.role) && (
                   <Button size="sm">
                     <Plus className="h-4 w-4 mr-2" />
                     New Project
                   </Button>
                 )}
-                ;
               </Link>
 
               <Link to="/projects">

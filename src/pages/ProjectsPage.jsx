@@ -31,12 +31,7 @@ export default function ProjectsPage() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const token = localStorage.getItem("taskhub_token");
-        const res = await api.get("/projects", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await api.get("/projects");
         setProjects(res.data);
       } catch (err) {
         console.error("Error fetching projects:", err);

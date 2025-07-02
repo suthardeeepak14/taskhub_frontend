@@ -29,6 +29,8 @@ export default function ProjectDetailPage() {
   const { id } = useParams();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [newMembers, setNewMembers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -48,6 +50,30 @@ export default function ProjectDetailPage() {
 
     fetchProject();
   }, [id]);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await api.get("/users");
+        setAllUsers(res.data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  const handleAddMembers = async () => {
+    try {
+      await api.put(`/projects/${id}/members`, {
+        members: newMembers,
+      });
+      alert("Members updated successfully");
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to update members:", error);
+      alert("Error updating members");
+    }
+  };
 
   const handleDelete = async () => {
     const confirmDelete = window.confirm(
@@ -143,7 +169,7 @@ export default function ProjectDetailPage() {
   const progressPercentage =
     totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  const displayOwner = project.owner;
+  const displayOwner = project.owners;
   const displayCreatedAt = project.created_at;
   return (
     // <ProtectedRoute>
@@ -185,7 +211,8 @@ export default function ProjectDetailPage() {
             </div>
 
             <div className="flex gap-2">
-              {user?.role === "admin" && (
+              {(user?.role === "admin" ||
+                project.owners.includes(user.username)) && (
                 <Link to={`/projects/${id}/edit`}>
                   <Button variant="outline" size="sm">
                     <Edit className="h-4 w-4 mr-2" />
@@ -193,7 +220,8 @@ export default function ProjectDetailPage() {
                   </Button>
                 </Link>
               )}
-              {user?.role === "admin" && (
+              {(user?.role === "admin" ||
+                project.owners.includes(user.username)) && (
                 <Button variant="outline" size="sm" onClick={handleDelete}>
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete
@@ -445,35 +473,77 @@ export default function ProjectDetailPage() {
             </Card>
 
             {/* Team Members */}
+            {/* Team Members */}
             <Card>
               <CardHeader>
                 <CardTitle>Team Members</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {project?.members?.map((member) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center space-x-3"
-                    >
-                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium">
-                          {member.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </span>
+                {/* Show Current Members */}
+                <div className="space-y-3 mb-4">
+                  {Array.isArray(project?.members) &&
+                    project.members.map((member, index) => (
+                      <div key={index} className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium">
+                            {typeof member === "string"
+                              ? member.charAt(0).toUpperCase() // If backend sends ["user1", "user2"]
+                              : member.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {typeof member === "string" ? member : member.name}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {typeof member === "string" ? "N/A" : member.role}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{member.name}</p>
-                        <p className="text-xs text-gray-600">{member.role}</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
-                <Button variant="outline" className="w-full mt-4">
+
+                {/* Select Multiple Members */}
+                <label className="text-sm font-medium text-gray-600 mb-1 block">
+                  Add / Update Members:
+                </label>
+
+                <Select
+                  value={newMembers}
+                  onValueChange={(selected) => {
+                    // Toggle selection (multi-select behavior)
+                    setNewMembers((prev) =>
+                      prev.includes(selected)
+                        ? prev.filter((m) => m !== selected)
+                        : [...prev, selected]
+                    );
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder="Select members..."
+                      value={newMembers.join(", ")}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.username}>
+                        {user.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="outline"
+                  className="w-full mt-3"
+                  onClick={handleAddMembers}
+                >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Member
+                  Save Members
                 </Button>
               </CardContent>
             </Card>
