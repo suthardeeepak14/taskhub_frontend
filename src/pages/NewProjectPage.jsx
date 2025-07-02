@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from "../ui/Alert";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function NewProjectPage() {
   const [formData, setFormData] = useState({
@@ -35,6 +36,7 @@ export default function NewProjectPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -160,9 +162,11 @@ export default function NewProjectPage() {
                 </div>
 
                 <div className="flex gap-4 pt-4">
-                  <Button type="submit" disabled={loading}>
-                    {loading ? "Creating..." : "Create Project"}
-                  </Button>
+                  {user?.role === "admin" && (
+                    <Button type="submit" disabled={loading}>
+                      {loading ? "Creating..." : "Create Project"}
+                    </Button>
+                  )}
                   <Link to="/projects">
                     <Button type="button" variant="outline">
                       Cancel

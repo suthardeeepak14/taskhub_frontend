@@ -20,12 +20,13 @@ import {
 import { Plus, Search, Calendar, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
-
+import { useAuth } from "../contexts/AuthContext";
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -90,12 +91,14 @@ export default function ProjectsPage() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Projects</h1>
             <p className="text-gray-600">Manage and track all your projects</p>
           </div>
-          <Link to="/projects/new">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Project
-            </Button>
-          </Link>
+          {user?.role === "admin" && (
+            <Link to="/projects/new">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Project
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Filters */}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom"; // ✅ Import navigate
 import { Button } from "../ui/Button";
 import {
   Card,
@@ -20,6 +21,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const navigate = useNavigate(); // ✅ Navigation hook
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,7 +30,10 @@ export default function LoginPage() {
 
     const result = await login(username, password);
 
-    if (!result.success) {
+    if (result.success) {
+      // ✅ Redirect to dashboard on successful login
+      navigate("/dashboard");
+    } else {
       setError(result.error);
     }
 

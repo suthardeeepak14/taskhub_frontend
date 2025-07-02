@@ -24,11 +24,13 @@ import {
 } from "../ui/Select";
 import { Link } from "react-router-dom";
 import { api } from "../api";
+import { useAuth } from "../contexts/AuthContext";
 export default function ProjectDetailPage() {
   const { id } = useParams();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -183,17 +185,21 @@ export default function ProjectDetailPage() {
             </div>
 
             <div className="flex gap-2">
-              <Link to={`/projects/${id}/edit`}>
-                <Button variant="outline" size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
+              {user?.role === "admin" && (
+                <Link to={`/projects/${id}/edit`}>
+                  <Button variant="outline" size="sm">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                </Link>
+              )}
+              {user?.role === "admin" && (
+                <Button variant="outline" size="sm" onClick={handleDelete}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
                 </Button>
-              </Link>
-
-              <Button variant="outline" size="sm" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
+              )}
+              ;
             </div>
           </div>
         </div>
@@ -272,13 +278,6 @@ export default function ProjectDetailPage() {
                       <Plus className="h-4 w-4 mr-2" />
                       Add Task
                     </Button> */}
-                    <div className="mt-4">
-                      <Link to={`/projects/${project.id}/tasks`}>
-                        <Button variant="outline" className="w-full">
-                          View All Tasks
-                        </Button>
-                      </Link>
-                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">

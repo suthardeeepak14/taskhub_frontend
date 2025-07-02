@@ -71,6 +71,13 @@ export default function DashboardPage() {
 
   const totalProjects = projects.length;
   const totalTasks = tasks.length;
+  const totalCompletedTasks = tasks.filter(
+    (task) => task.status === "completed"
+  ).length;
+  const totalOverdueTasks = tasks.filter(
+    (task) =>
+      new Date(task.due_date) < new Date() && task.status !== "completed"
+  ).length;
 
   if (loading) return <p>Loading...</p>;
 
@@ -108,7 +115,7 @@ export default function DashboardPage() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">–</div>{" "}
+              <div className="text-2xl font-bold">{totalTasks}</div>
               {/* You can filter and count active tasks */}
             </CardContent>
           </Card>
@@ -121,7 +128,7 @@ export default function DashboardPage() {
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">–</div>{" "}
+              <div className="text-2xl font-bold">{totalCompletedTasks}</div>
               {/* Same for completed tasks */}
             </CardContent>
           </Card>
@@ -134,7 +141,9 @@ export default function DashboardPage() {
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">–</div>{" "}
+              <div className="text-2xl font-bold text-red-600">
+                {totalOverdueTasks}
+              </div>
               {/* Same for overdue */}
             </CardContent>
           </Card>
@@ -149,10 +158,13 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center justify-between gap-4">
               <Link to="/projects/new">
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Project
-                </Button>
+                {user?.role === "admin" && (
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Project
+                  </Button>
+                )}
+                ;
               </Link>
 
               <Link to="/projects">

@@ -30,6 +30,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
+import { useAuth } from "../contexts/AuthContext";
+
 export default function TaskDetailPage() {
   const { id, taskId } = useParams();
   const [task, setTask] = useState(null);
@@ -37,6 +39,7 @@ export default function TaskDetailPage() {
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchTaskData = async () => {
@@ -115,7 +118,7 @@ export default function TaskDetailPage() {
         `/projects/${id}/tasks/${taskId}/comments`,
         {
           content: newComment,
-          author: localStorage.getItem("username") || "Anonymous",
+          author: user?.username || "Anonymous", // ✅ Fixed here
         },
         {
           headers: {

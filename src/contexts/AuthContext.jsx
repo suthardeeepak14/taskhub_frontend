@@ -35,6 +35,7 @@ export function AuthProvider({ children }) {
 
       api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
       setUser(userData);
+      console.log("Current User:", user);
       return { success: true };
     } catch (error) {
       return {
