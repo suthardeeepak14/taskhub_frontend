@@ -22,7 +22,7 @@ import {
 } from "../ui/Select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/Tabs";
 import { api } from "../api";
-
+import { useTaskPermissions } from "../hooks/useTaskPermissions";
 export default function ProjectTasksPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -33,6 +33,7 @@ export default function ProjectTasksPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const { canCreateTask } = useTaskPermissions({ project });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -135,10 +136,12 @@ export default function ProjectTasksPage() {
                 Manage and track all tasks for {project?.name}
               </p>
             </div>
-            <Button onClick={() => navigate(`/projects/${id}/tasks/new`)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Task
-            </Button>
+            {canCreateTask && (
+              <Button onClick={() => navigate(`/projects/${id}/tasks/new`)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Task
+              </Button>
+            )}
           </div>
         </div>
 

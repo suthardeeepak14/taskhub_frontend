@@ -2,12 +2,15 @@ import { useState, Children, cloneElement } from "react";
 import { ChevronDown } from "lucide-react";
 import clsx from "clsx";
 
-export function Select({ value, onValueChange, children }) {
+// ✅ Main Select wrapper
+export function Select({ value = "", onValueChange, children }) {
   const [open, setOpen] = useState(false);
 
   const handleSelect = (val) => {
-    onValueChange(val);
-    setOpen(false);
+    if (typeof onValueChange === "function") {
+      onValueChange(val);
+    }
+    setOpen(false); // Close dropdown after selection
   };
 
   const childrenWithProps = Children.map(children, (child) => {
@@ -21,6 +24,7 @@ export function Select({ value, onValueChange, children }) {
       return cloneElement(child, {
         open,
         onSelect: handleSelect,
+        selectedValue: value,
       });
     }
 
@@ -30,6 +34,7 @@ export function Select({ value, onValueChange, children }) {
   return <div className="relative">{childrenWithProps}</div>;
 }
 
+// ✅ Trigger Button
 export function SelectTrigger({ children, onClick }) {
   return (
     <button
@@ -43,22 +48,25 @@ export function SelectTrigger({ children, onClick }) {
   );
 }
 
+// ✅ Value Display
 export function SelectValue({ value, placeholder }) {
   return (
     <span
       className={clsx("text-sm", value ? "text-gray-900" : "text-gray-700")}
     >
-      {value && Array.isArray(value) ? value.join(", ") : value || placeholder}
+      {value || placeholder}
     </span>
   );
 }
 
-export function SelectContent({ children, open, onSelect }) {
+// ✅ Dropdown Menu
+export function SelectContent({ children, open, onSelect, selectedValue }) {
   if (!open) return null;
 
   const items = Children.map(children, (child) => {
     return cloneElement(child, {
-      onSelect, // ✅ Fix: pass the onSelect handler to each SelectItem
+      onSelect,
+      selectedValue,
     });
   });
 
@@ -69,11 +77,16 @@ export function SelectContent({ children, open, onSelect }) {
   );
 }
 
-export function SelectItem({ value, children, onSelect }) {
+// ✅ Each Selectable Item
+export function SelectItem({ value, children, onSelect, selectedValue }) {
+  const isSelected = value === selectedValue;
+
   return (
     <li
-      className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-      onClick={() => onSelect && onSelect(value)} // ✅ Safety check
+      className={`px-3 py-2 hover:bg-gray-100 cursor-pointer ${
+        isSelected ? "bg-gray-200 font-semibold" : ""
+      }`}
+      onClick={() => onSelect(value)}
     >
       {children}
     </li>

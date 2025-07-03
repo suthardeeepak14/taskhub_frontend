@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 // import ProtectedRoute from "../components/ProtectedRoute"
@@ -34,43 +34,44 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        const response = await api.get(`/projects/${id}`);
-        const data = response.data;
+  const fetchProject = useCallback(async () => {
+    try {
+      const res = await api.get(`/projects/${id}`);
+      const data = res.data;
 
-        setProject(data); // ✅ Directly save full project from backend (includes real tasks, created_at, owner, etc.)
-      } catch (error) {
-        console.error("Failed to load project:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      // Force members to be an array
+      data.members = Array.isArray(data.members) ? data.members : [];
 
-    fetchProject();
+      setProject(data);
+    } catch (err) {
+      console.error("Failed to load project:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await api.get("/users");
-        setAllUsers(res.data);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    };
-    fetchUsers();
+    fetchProject();
+  }, [fetchProject]);
+  useEffect(() => {
+    api
+      .get("/users")
+      .then((res) => setAllUsers(res.data))
+      .catch((err) => console.error("Error fetching users:", err));
   }, []);
 
   const handleAddMembers = async () => {
+    // Combine existing and new members, remove duplicates
+    const updatedMembers = Array.from(
+      new Set([...project.members, ...newMembers])
+    );
+
     try {
-      await api.put(`/projects/${id}/members`, {
-        members: newMembers,
-      });
-      alert("Members updated successfully");
-      window.location.reload();
-    } catch (error) {
-      console.error("Failed to update members:", error);
+      await api.put(`/projects/${id}/members`, { members: updatedMembers });
+
+      setNewMembers([]);
+      fetchProject(); // Refresh with updated members
+    } catch (err) {
+      console.error("Failed to update members:", err);
       alert("Error updating members");
     }
   };
@@ -420,133 +421,132 @@ export default function ProjectDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Project Actions - Change Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <label className="text-sm font-medium text-gray-600 mb-2 block">
-                    Change Project Status
-                  </label>
-                  <Select
-                    value={project.status}
-                    onValueChange={async (newStatus) => {
-                      try {
-                        await api.put(
-                          `/projects/${id}`,
-                          { ...project, status: newStatus },
-                          {
-                            headers: {
-                              Authorization: `Bearer ${localStorage.getItem(
-                                "taskhub_token"
-                              )}`,
-                            },
-                          }
-                        );
-                        setProject((prev) => ({ ...prev, status: newStatus }));
-                      } catch (error) {
-                        console.error(
-                          "Failed to update project status:",
-                          error
-                        );
-                        alert("Failed to update status");
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder="Select status"
+            {(user?.role === "admin" ||
+              project.owners.includes(user.username)) && (
+              <>
+                {/* Project Actions - Change Status */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Project Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 mb-2 block">
+                        Change Project Status
+                      </label>
+                      <Select
                         value={project.status}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="on_hold">On Hold</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
+                        onValueChange={async (newStatus) => {
+                          try {
+                            await api.put(
+                              `/projects/${id}`,
+                              {
+                                name: project.name,
+                                description: project.description,
+                                due_date: project.due_date,
+                                status: newStatus, // ← only send expected fields
+                              },
+                              {
+                                headers: {
+                                  Authorization: `Bearer ${localStorage.getItem(
+                                    "token"
+                                  )}`,
+                                },
+                              }
+                            );
 
-            {/* Team Members */}
-            {/* Team Members */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Team Members</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {/* Show Current Members */}
-                <div className="space-y-3 mb-4">
-                  {Array.isArray(project?.members) &&
-                    project.members.map((member, index) => (
-                      <div key={index} className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-medium">
-                            {typeof member === "string"
-                              ? member.charAt(0).toUpperCase() // If backend sends ["user1", "user2"]
-                              : member.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">
-                            {typeof member === "string" ? member : member.name}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            {typeof member === "string" ? "N/A" : member.role}
-                          </p>
-                        </div>
+                            setProject((prev) => ({
+                              ...prev,
+                              status: newStatus,
+                            }));
+                          } catch (error) {
+                            console.error(
+                              "Failed to update project status:",
+                              error
+                            );
+                            alert("Failed to update status");
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder="Select status"
+                            value={project.status}
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="on_hold">On Hold</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Team Members */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Team Members</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {/* ✅ Existing team members display */}
+                    {project.members.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        <h4 className="text-sm font-medium mb-1 text-gray-700">
+                          Current Team Members
+                        </h4>
+                        {project.members.map((m, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center space-x-2"
+                          >
+                            <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
+                              <span className="font-medium">
+                                {m.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <span>{m}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                </div>
+                    )}
 
-                {/* Select Multiple Members */}
-                <label className="text-sm font-medium text-gray-600 mb-1 block">
-                  Add / Update Members:
-                </label>
+                    {/* 🔽 Member selection dropdown */}
+                    <Select
+                      value={newMembers}
+                      onValueChange={(selected) => {
+                        setNewMembers((prev) => [...prev, selected]); // Append new member
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          value={newMembers}
+                          placeholder="Select members..."
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allUsers.map((u) => (
+                          <SelectItem key={u.id} value={u.username}>
+                            {u.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-                <Select
-                  value={newMembers}
-                  onValueChange={(selected) => {
-                    // Toggle selection (multi-select behavior)
-                    setNewMembers((prev) =>
-                      prev.includes(selected)
-                        ? prev.filter((m) => m !== selected)
-                        : [...prev, selected]
-                    );
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder="Select members..."
-                      value={newMembers.join(", ")}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allUsers.map((user) => (
-                      <SelectItem key={user.id} value={user.username}>
-                        {user.username}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  variant="outline"
-                  className="w-full mt-3"
-                  onClick={handleAddMembers}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Save Members
-                </Button>
-              </CardContent>
-            </Card>
+                    <Button
+                      variant="outline"
+                      className="w-full mt-3"
+                      onClick={handleAddMembers}
+                      disabled={newMembers.length === 0}
+                    >
+                      <Plus className="mr-1" /> Save Members
+                    </Button>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
         </div>
       </div>

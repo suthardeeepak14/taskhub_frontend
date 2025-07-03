@@ -31,6 +31,7 @@ import {
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../contexts/AuthContext";
+import { useTaskPermissions } from "../hooks/useTaskPermissions";
 
 export default function TaskDetailPage() {
   const { id, taskId } = useParams();
@@ -40,6 +41,7 @@ export default function TaskDetailPage() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const permissions = useTaskPermissions({ task, project: task?.project });
 
   useEffect(() => {
     const fetchTaskData = async () => {
@@ -263,20 +265,32 @@ export default function TaskDetailPage() {
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/projects/${id}/tasks/${taskId}/edit`)}
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleDeleteTask}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
-            </div>
+            {(permissions.canEditTask || permissions.canDeleteTask) && (
+              <div className="flex gap-2">
+                {permissions.canEditTask && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      navigate(`/projects/${id}/tasks/${taskId}/edit`)
+                    }
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                )}
+                {permissions.canDeleteTask && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDeleteTask}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

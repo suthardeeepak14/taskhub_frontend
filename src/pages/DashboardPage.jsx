@@ -21,6 +21,7 @@ import {
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../api";
+import { useTaskPermissions } from "../hooks/useTaskPermissions";
 
 export default function DashboardPage() {
   const { user } = useAuth();

@@ -35,6 +35,8 @@ export default function NewTaskPage() {
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [users, setUsers] = useState([]);
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -98,6 +100,16 @@ export default function NewTaskPage() {
     if (projectId) {
       setFormData((prev) => ({ ...prev, project_id: projectId }));
     }
+
+    // Fetch all users for assignee dropdown
+    api
+      .get("/users", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      })
+      .then((res) => setUsers(res.data))
+      .catch((err) => console.error("Failed to fetch users", err));
   }, [projectId]);
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -213,17 +225,31 @@ export default function NewTaskPage() {
                     </Select>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Assignee
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.assignee}
-                    onChange={(e) => handleChange("assignee", e.target.value)}
-                    placeholder="Enter assignee name"
-                  />
+                <div className="space-y-2">
+                  <Label>Assignee</Label>
+                  <div className="space-y-2">
+                    <Label>Assignee</Label>
+                    <Select
+                      value={formData.assignee}
+                      onValueChange={(value) => handleChange("assignee", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          value={formData.assignee || ""}
+                          placeholder="Select assignee"
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users.map((user) => (
+                          <SelectItem key={user.id} value={user.username}>
+                            {user.username || user.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+
                 <div className="space-y-2">
                   <Label>Due Date</Label>
                   <Input
