@@ -99,18 +99,48 @@ export default function NewTaskPage() {
   useEffect(() => {
     if (projectId) {
       setFormData((prev) => ({ ...prev, project_id: projectId }));
-    }
 
-    // Fetch all users for assignee dropdown
-    api
-      .get("/users", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-      .then((res) => setUsers(res.data))
-      .catch((err) => console.error("Failed to fetch users", err));
+      api
+        .get(`/projects/${projectId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("taskhub_token")}`,
+          },
+        })
+        .then((res) => {
+          const membersRaw = res.data.members || [];
+
+          // ✅ Ensure members is always an array of usernames
+          let memberUsernames = [];
+
+          if (Array.isArray(membersRaw)) {
+            memberUsernames = membersRaw;
+          } else if (typeof membersRaw === "string") {
+            memberUsernames = membersRaw.split(",").map((u) => u.trim());
+          }
+
+          // ✅ Fetch all users and filter based on usernames
+          api
+            .get("/users", {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem(
+                  "taskhub_token"
+                )}`,
+              },
+            })
+            .then((userRes) => {
+              const matchedUsers = userRes.data.filter((u) =>
+                memberUsernames.includes(u.username)
+              );
+              setUsers(matchedUsers);
+            })
+            .catch((err) => console.error("Failed to fetch users", err));
+        })
+        .catch((err) => {
+          console.error("Failed to fetch project", err);
+        });
+    }
   }, [projectId]);
+
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -227,27 +257,30 @@ export default function NewTaskPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Assignee</Label>
-                  <div className="space-y-2">
-                    <Label>Assignee</Label>
-                    <Select
-                      value={formData.assignee}
-                      onValueChange={(value) => handleChange("assignee", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          value={formData.assignee || ""}
-                          placeholder="Select assignee"
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {users.map((user) => (
+                  <Select
+                    value={formData.assignee}
+                    onValueChange={(value) => handleChange("assignee", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        value={formData.assignee || ""}
+                        placeholder="Select assignee"
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.length === 0 ? (
+                        <SelectItem value="" disabled>
+                          No team members available
+                        </SelectItem>
+                      ) : (
+                        users.map((user) => (
                           <SelectItem key={user.id} value={user.username}>
                             {user.username || user.email}
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">

@@ -196,44 +196,44 @@ export default function ProjectTasksPage() {
                   className="hover:shadow-md transition-shadow"
                 >
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-lg">
-                            {task.title}
-                          </h3>
-                          <Badge className={getStatusColor(task.status)}>
-                            {task.status.replace("_", " ")}
-                          </Badge>
-                          <Badge className={getPriorityColor(task.priority)}>
-                            {task.priority}
-                          </Badge>
-                        </div>
-                        <p className="text-gray-600 mb-4">{task.description}</p>
-                        <div className="flex items-center gap-6 text-sm text-gray-500">
-                          <div className="flex items-center">
-                            <User className="h-4 w-4 mr-1" />
-                            {task.assignee || "Unassigned"}
+                    {/* Entire Card clickable */}
+                    <Link
+                      to={`/projects/${id}/tasks/${task.id}`}
+                      className="block"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg">
+                              {task.title}
+                            </h3>
+                            <Badge className={getStatusColor(task.status)}>
+                              {task.status.replace("_", " ")}
+                            </Badge>
+                            <Badge className={getPriorityColor(task.priority)}>
+                              {task.priority}
+                            </Badge>
                           </div>
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            Due {task.due_date || "-"}
-                          </div>
-                          <div className="flex items-center">
-                            <MessageSquare className="h-4 w-4 mr-1" />
-                            {task.comment_count || 0} comments
+                          <p className="text-gray-600 mb-4">
+                            {task.description}
+                          </p>
+                          <div className="flex items-center gap-6 text-sm text-gray-500">
+                            <div className="flex items-center">
+                              <User className="h-4 w-4 mr-1" />
+                              {task.assignee || "Unassigned"}
+                            </div>
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-1" />
+                              Due {task.due_date || "-"}
+                            </div>
+                            <div className="flex items-center">
+                              <MessageSquare className="h-4 w-4 mr-1" />
+                              {task.comment_count || 0} comments
+                            </div>
                           </div>
                         </div>
                       </div>
-
-                      <div className="flex gap-2">
-                        <Link to={`/projects/${id}/tasks/${task.id}`}>
-                          <Button variant="outline" size="sm">
-                            View
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
+                    </Link>
                   </CardContent>
                 </Card>
               ))}

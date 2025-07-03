@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-// import ProtectedRoute from "../components/ProtectedRoute";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import {
   Card,
@@ -28,7 +27,6 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../contexts/AuthContext";
 import { useTaskPermissions } from "../hooks/useTaskPermissions";
@@ -36,17 +34,19 @@ import { useTaskPermissions } from "../hooks/useTaskPermissions";
 export default function TaskDetailPage() {
   const { id, taskId } = useParams();
   const [task, setTask] = useState(null);
+  const [project, setProject] = useState(null);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const permissions = useTaskPermissions({ task, project: task?.project });
+  const navigate = useNavigate();
+
+  const permissions = useTaskPermissions({ task, project });
 
   useEffect(() => {
     const fetchTaskData = async () => {
       try {
-        // Fetch task details
+        // ✅ Fetch task
         const taskRes = await api.get(`/projects/${id}/tasks/${taskId}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("taskhub_token")}`,
@@ -54,7 +54,15 @@ export default function TaskDetailPage() {
         });
         setTask(taskRes.data);
 
-        // Fetch comments for this task
+        // ✅ Fetch project (for role access)
+        const projectRes = await api.get(`/projects/${id}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("taskhub_token")}`,
+          },
+        });
+        setProject(projectRes.data);
+
+        // ✅ Fetch comments
         const commentsRes = await api.get(
           `/projects/${id}/tasks/${taskId}/comments`,
           {
@@ -64,8 +72,8 @@ export default function TaskDetailPage() {
           }
         );
         setComments(commentsRes.data);
-      } catch (error) {
-        console.error("Failed to fetch task data:", error);
+      } catch (err) {
+        console.error("Error fetching task:", err);
       } finally {
         setLoading(false);
       }
@@ -78,10 +86,7 @@ export default function TaskDetailPage() {
     try {
       await api.put(
         `/projects/${id}/tasks/${taskId}`,
-        {
-          ...task,
-          status: newStatus,
-        },
+        { ...task, status: newStatus },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("taskhub_token")}`,
@@ -89,30 +94,29 @@ export default function TaskDetailPage() {
         }
       );
       setTask((prev) => ({ ...prev, status: newStatus }));
-    } catch (error) {
-      console.error("Failed to update task status:", error);
+    } catch (err) {
+      console.error("Error updating task status:", err);
     }
   };
+
   const handleDeleteTask = async () => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this task?"
-    );
-    if (!confirmDelete) return;
+    const confirm = window.confirm("Delete this task?");
+    if (!confirm) return;
 
     try {
       await api.delete(`/tasks/${taskId}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("taskhub_token")}`,
         },
       });
       navigate(`/projects/${id}/tasks`);
-    } catch (error) {
-      console.error("Failed to delete task:", error);
+    } catch (err) {
+      console.error("Error deleting task:", err);
     }
   };
+
   const handleAddComment = async (e) => {
     e.preventDefault();
-
     if (!newComment.trim()) return;
 
     try {
@@ -120,7 +124,7 @@ export default function TaskDetailPage() {
         `/projects/${id}/tasks/${taskId}/comments`,
         {
           content: newComment,
-          author: user?.username || "Anonymous", // ✅ Fixed here
+          author: user?.username || "Anonymous",
         },
         {
           headers: {
@@ -128,7 +132,7 @@ export default function TaskDetailPage() {
           },
         }
       );
-      const updatedComments = await api.get(
+      const updated = await api.get(
         `/projects/${id}/tasks/${taskId}/comments`,
         {
           headers: {
@@ -136,11 +140,10 @@ export default function TaskDetailPage() {
           },
         }
       );
-
-      setComments(updatedComments.data);
+      setComments(updated.data);
       setNewComment("");
-    } catch (error) {
-      console.error("Failed to add comment:", error);
+    } catch (err) {
+      console.error("Error adding comment:", err);
     }
   };
 
@@ -170,200 +173,126 @@ export default function TaskDetailPage() {
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const formatDate = (dateStr) =>
+    new Date(dateStr).toLocaleString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
 
-  if (loading) {
-    return (
-      // <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 h-96 bg-gray-200 rounded"></div>
-              <div className="h-96 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      // </ProtectedRoute>
-    );
-  }
-
-  if (!task) {
-    return (
-      // <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">
-              Task Not Found
-            </h1>
-            <Link to={`/projects/${id}/tasks`}>
-              <Button>Back to Tasks</Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-      // </ProtectedRoute>
-    );
-  }
+  if (loading) return <div className="p-8">Loading...</div>;
+  if (!task) return <div className="p-8 text-red-500">Task not found.</div>;
 
   return (
-    // <ProtectedRoute>
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <Link
-            to={`/projects/${id}/tasks`}
-            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to {task?.project?.name} Tasks
-          </Link>
+        <Link
+          to={`/projects/${id}/tasks`}
+          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to {project?.name || "Project"} Tasks
+        </Link>
 
-          <div className="flex justify-between items-start">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-gray-900">
-                  {task.title}
-                </h1>
-                <Badge className={getStatusColor(task.status)}>
-                  {task.status.replace("_", " ")}
-                </Badge>
-                <Badge className={getPriorityColor(task.priority)}>
-                  {task.priority} priority
-                </Badge>
-              </div>
-
-              <div className="flex items-center gap-6 text-sm text-gray-600">
-                <div className="flex items-center">
-                  <User className="h-4 w-4 mr-1" />
-                  Assigned by {task.assignee}
-                </div>
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  Due {task.due_date}
-                </div>
-                <div className="flex items-center">
-                  <MessageSquare className="h-4 w-4 mr-1" />
-                  {comments.length} comments
-                </div>
-              </div>
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold text-gray-900">{task.title}</h1>
+              <Badge className={getStatusColor(task.status)}>
+                {task.status.replace("_", " ")}
+              </Badge>
+              <Badge className={getPriorityColor(task.priority)}>
+                {task.priority} priority
+              </Badge>
             </div>
 
-            {(permissions.canEditTask || permissions.canDeleteTask) && (
-              <div className="flex gap-2">
-                {permissions.canEditTask && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      navigate(`/projects/${id}/tasks/${taskId}/edit`)
-                    }
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                )}
-                {permissions.canDeleteTask && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDeleteTask}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </Button>
-                )}
+            <div className="flex items-center gap-6 text-sm text-gray-600">
+              <div className="flex items-center">
+                <User className="h-4 w-4 mr-1" />
+                Assigned to {task.assignee}
               </div>
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-1" />
+                Due {task.due_date}
+              </div>
+              <div className="flex items-center">
+                <MessageSquare className="h-4 w-4 mr-1" />
+                {comments.length} comments
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            {permissions.canEditTask && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/projects/${id}/tasks/${taskId}/edit`)}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            )}
+            {permissions.canDeleteTask && (
+              <Button variant="outline" size="sm" onClick={handleDeleteTask}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
             )}
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            {/* Task Description */}
+            {/* Description */}
             <Card>
               <CardHeader>
                 <CardTitle>Description</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 leading-relaxed">
-                  {task.description}
-                </p>
-              </CardContent>
+              <CardContent>{task.description}</CardContent>
             </Card>
 
-            {/* Comments Section */}
+            {/* Comments */}
             <Card>
               <CardHeader>
                 <CardTitle>Comments ({comments.length})</CardTitle>
-                <CardDescription>
-                  Discuss this task with your team members
-                </CardDescription>
+                <CardDescription>Task discussion</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {/* Existing Comments */}
-                  <div className="space-y-4">
-                    {comments.map((comment) => (
-                      <div key={comment.id} className="flex space-x-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-medium">
-                            {comment.author
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
+              <CardContent className="space-y-6">
+                {comments.map((c) => (
+                  <div key={c.id} className="flex space-x-3">
+                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                      {c.author?.[0]}
+                    </div>
+                    <div className="flex-1">
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="flex justify-between mb-1">
+                          <span className="font-medium text-sm">
+                            {c.author}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {formatDate(c.created_at)}
                           </span>
                         </div>
-                        <div className="flex-1">
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-medium text-sm">
-                                {comment.author}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {formatDate(comment.created_at)}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-700">
-                              {comment.content}
-                            </p>
-                          </div>
-                        </div>
+                        <p className="text-sm text-gray-700">{c.content}</p>
                       </div>
-                    ))}
+                    </div>
                   </div>
-
-                  <Separator />
-
-                  {/* Add New Comment */}
-                  <form onSubmit={handleAddComment} className="space-y-3">
-                    <Textarea
-                      placeholder="Add a comment..."
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      rows={3}
-                    />
-                    <Button type="submit" disabled={!newComment.trim()}>
-                      Add Comment
-                    </Button>
-                  </form>
-                </div>
+                ))}
+                <Separator />
+                <form onSubmit={handleAddComment} className="space-y-3">
+                  <Textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a comment..."
+                  />
+                  <Button type="submit" disabled={!newComment.trim()}>
+                    Add Comment
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </div>
@@ -374,77 +303,58 @@ export default function TaskDetailPage() {
               <CardHeader>
                 <CardTitle>Actions</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-600 mb-2 block">
-                    Change Status
-                  </label>
-                  <Select
-                    value={task.status}
-                    onValueChange={handleStatusChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={task.status
-                          .replace("_", " ")
-                          .toUpperCase()}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <CardContent>
+                <label className="block text-sm text-gray-600 mb-2">
+                  Change Status
+                </label>
+                <Select value={task.status} onValueChange={handleStatusChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={task.status} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
               </CardContent>
             </Card>
 
-            {/* Task Details */}
+            {/* Task Info */}
             <Card>
               <CardHeader>
                 <CardTitle>Task Details</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Project
-                  </label>
-                  <p className="text-sm">{task.title}</p>
+              <CardContent className="space-y-4 text-sm text-gray-700">
+                <div className="flex justify-between">
+                  <span className="font-medium">Task</span>
+                  <span>{task?.title}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Assignee
-                  </label>
-                  <p className="text-sm">{task.assignee}</p>
+                <div className="flex justify-between">
+                  <span className="font-medium">Created By</span>
+                  <span>{task.created_by?.username || "N/A"}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Priority
-                  </label>
-                  <div className="mt-1">
-                    <Badge className={getPriorityColor(task.priority)}>
-                      {task.priority}
-                    </Badge>
-                  </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Assignee</span>
+                  <span>{task.assignee}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Due Date
-                  </label>
-                  <p className="text-sm">{task.due_date}</p>
+                <div className="flex justify-between">
+                  <span className="font-medium">Priority</span>
+                  <Badge className={getPriorityColor(task.priority)}>
+                    {task.priority}
+                  </Badge>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Created
-                  </label>
-                  <p className="text-sm">{task.created_at}</p>
+                <div className="flex justify-between">
+                  <span className="font-medium">Due Date</span>
+                  <span>{task.due_date}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Last Updated
-                  </label>
-                  <p className="text-sm">{task.updated_at}</p>
+                <div className="flex justify-between">
+                  <span className="font-medium">Created At</span>
+                  <span>{task.created_at}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Updated At</span>
+                  <span>{task.updated_at}</span>
                 </div>
               </CardContent>
             </Card>
@@ -452,6 +362,5 @@ export default function TaskDetailPage() {
         </div>
       </div>
     </div>
-    // </ProtectedRoute>
   );
 }

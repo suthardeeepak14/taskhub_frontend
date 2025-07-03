@@ -25,6 +25,7 @@ import {
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../contexts/AuthContext";
+import { SearchableMultiSelect } from "../ui/SearchableMultiSelect";
 export default function ProjectDetailPage() {
   const { id } = useParams();
   const [project, setProject] = useState(null);
@@ -52,6 +53,11 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     fetchProject();
   }, [fetchProject]);
+
+  useEffect(() => {
+    console.log("✅ project.members:", project?.members);
+  }, [project]);
+
   useEffect(() => {
     api
       .get("/users")
@@ -228,7 +234,6 @@ export default function ProjectDetailPage() {
                   Delete
                 </Button>
               )}
-              ;
             </div>
           </div>
         </div>
@@ -239,9 +244,9 @@ export default function ProjectDetailPage() {
               <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="tasks">
-                  <Link to={`/projects/${project.id}/tasks`} className="flex-1">
-                    Tasks
-                  </Link>
+                  {/* <Link to={`/projects/${project.id}/tasks`} className="flex-1"> */}
+                  {/* </Link> */}
+                  Tasks
                 </TabsTrigger>
                 <TabsTrigger value="activity">Activity</TabsTrigger>
               </TabsList>
@@ -486,6 +491,7 @@ export default function ProjectDetailPage() {
                 </Card>
 
                 {/* Team Members */}
+                {/* Team Members */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Team Members</CardTitle>
@@ -497,43 +503,67 @@ export default function ProjectDetailPage() {
                         <h4 className="text-sm font-medium mb-1 text-gray-700">
                           Current Team Members
                         </h4>
-                        {project.members.map((m, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center space-x-2"
-                          >
-                            <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
-                              <span className="font-medium">
-                                {m.charAt(0).toUpperCase()}
-                              </span>
+                        {project.members.map((username, idx) => {
+                          const member = allUsers.find(
+                            (u) => u.username === username
+                          );
+
+                          return (
+                            <div
+                              key={idx}
+                              className="flex items-center space-x-2"
+                            >
+                              <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
+                                <span className="font-medium">
+                                  {(member?.username || username)
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium">
+                                  {member?.full_name || username}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {member?.email || ""}
+                                </span>
+                              </div>
                             </div>
-                            <span>{m}</span>
-                          </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* ✅ Show new selected members as removable chips */}
+                    {newMembers.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {newMembers.map((username) => (
+                          <span
+                            key={username}
+                            className="bg-primary/10 text-sm px-2 py-1 rounded flex items-center space-x-1"
+                          >
+                            <span>{username}</span>
+                            <button
+                              onClick={() =>
+                                setNewMembers(
+                                  newMembers.filter((u) => u !== username)
+                                )
+                              }
+                              className="ml-1 text-xs text-gray-500 hover:text-red-500"
+                            >
+                              ×
+                            </button>
+                          </span>
                         ))}
                       </div>
                     )}
 
                     {/* 🔽 Member selection dropdown */}
-                    <Select
-                      value={newMembers}
-                      onValueChange={(selected) => {
-                        setNewMembers((prev) => [...prev, selected]); // Append new member
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          value={newMembers}
-                          placeholder="Select members..."
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allUsers.map((u) => (
-                          <SelectItem key={u.id} value={u.username}>
-                            {u.username}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableMultiSelect
+                      options={allUsers}
+                      selected={newMembers}
+                      onChange={setNewMembers}
+                    />
 
                     <Button
                       variant="outline"
