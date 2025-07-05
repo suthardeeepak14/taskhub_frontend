@@ -308,35 +308,57 @@ export default function ProjectDetailPage() {
                         Manage and track all project tasks
                       </CardDescription>
                     </div>
-                    {/* <Button size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Task
-                    </Button> */}
+
+                    {/* Always show "New Task" button */}
+                    <Link to={`/projects/${project.id}/tasks/new`}>
+                      <Button size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        New Task
+                      </Button>
+                    </Link>
                   </CardHeader>
+
                   <CardContent>
-                    <div className="space-y-4">
-                      {project?.tasks?.map((task) => (
-                        <div
-                          key={task.id}
-                          className="flex items-center justify-between p-4 border rounded-lg"
-                        >
-                          <div className="flex-1">
-                            <h3 className="font-medium">{task.title}</h3>
-                            <p className="text-sm text-gray-600">
-                              Assigned to {task.assignee}
-                            </p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Badge className={getPriorityColor(task.priority)}>
-                              {task.priority}
-                            </Badge>
-                            <Badge variant="outline">
-                              {task.status.replace("_", " ")}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    {project?.tasks?.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-600 mb-4">
+                          No tasks found for this project.
+                        </p>
+                        <Link to={`/projects/${project.id}/tasks/new`}>
+                          <Button>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create your first task
+                          </Button>
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {project?.tasks?.map((task) => (
+                          <Link
+                            key={task.id}
+                            to={`/projects/${project.id}/tasks/${task.id}`}
+                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-100 transition"
+                          >
+                            <div className="flex-1">
+                              <h3 className="font-medium">{task.title}</h3>
+                              <p className="text-sm text-gray-600">
+                                Assigned to {task.assignee}
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Badge
+                                className={getPriorityColor(task.priority)}
+                              >
+                                {task.priority}
+                              </Badge>
+                              <Badge variant="outline">
+                                {task.status.replace("_", " ")}
+                              </Badge>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -489,52 +511,51 @@ export default function ProjectDetailPage() {
                     </div>
                   </CardContent>
                 </Card>
+              </>
+            )}
+            {/* Team Members */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Team Members</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {/* ✅ Always show current members */}
+                {project.members.length > 0 && (
+                  <div className="space-y-2 mb-4">
+                    <h4 className="text-sm font-medium mb-1 text-gray-700">
+                      Current Team Members
+                    </h4>
+                    {project.members.map((username, idx) => {
+                      const member = allUsers.find(
+                        (u) => u.username === username
+                      );
 
-                {/* Team Members */}
-                {/* Team Members */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Team Members</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {/* ✅ Existing team members display */}
-                    {project.members.length > 0 && (
-                      <div className="space-y-2 mb-4">
-                        <h4 className="text-sm font-medium mb-1 text-gray-700">
-                          Current Team Members
-                        </h4>
-                        {project.members.map((username, idx) => {
-                          const member = allUsers.find(
-                            (u) => u.username === username
-                          );
-
-                          return (
-                            <div
-                              key={idx}
-                              className="flex items-center space-x-2"
-                            >
-                              <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
-                                <span className="font-medium">
-                                  {(member?.username || username)
-                                    .charAt(0)
-                                    .toUpperCase()}
-                                </span>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-sm font-medium">
-                                  {member?.full_name || username}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {member?.email || ""}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* ✅ Show new selected members as removable chips */}
+                      return (
+                        <div key={idx} className="flex items-center space-x-2">
+                          <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
+                            <span className="font-medium">
+                              {(member?.username || username)
+                                .charAt(0)
+                                .toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">
+                              {member?.full_name || username}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {member?.email || ""}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {(user?.role === "admin" ||
+                  project.owners.includes(user.username)) && (
+                  <>
+                    {/* Chips for selected members */}
                     {newMembers.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-2">
                         {newMembers.map((username) => (
@@ -558,7 +579,7 @@ export default function ProjectDetailPage() {
                       </div>
                     )}
 
-                    {/* 🔽 Member selection dropdown */}
+                    {/* Multi-select input */}
                     <SearchableMultiSelect
                       options={allUsers}
                       selected={newMembers}
@@ -573,10 +594,10 @@ export default function ProjectDetailPage() {
                     >
                       <Plus className="mr-1" /> Save Members
                     </Button>
-                  </CardContent>
-                </Card>
-              </>
-            )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

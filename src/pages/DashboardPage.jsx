@@ -21,15 +21,16 @@ import {
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../api";
-import { useTaskPermissions } from "../hooks/useTaskPermissions";
+// import { useTaskPermissions } from "../hooks/useTaskPermissions";
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
     const fetchData = async () => {
       try {
         const [projectsRes, tasksRes] = await Promise.all([
@@ -47,7 +48,7 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, []);
+  }, [authLoading]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -74,7 +75,7 @@ export default function DashboardPage() {
       new Date(task.due_date) < new Date() && task.status !== "completed"
   ).length;
 
-  if (loading) return <p>Loading...</p>;
+  if (authLoading || loading) return <p>Loading...</p>;
 
   return (
     <div className="bg-gray-50">

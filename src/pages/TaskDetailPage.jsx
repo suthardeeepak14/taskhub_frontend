@@ -332,7 +332,7 @@ export default function TaskDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Created By</span>
-                  <span>{task.created_by?.username || "N/A"}</span>
+                  <span>{task.created_by || "N/A"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Assignee</span>
